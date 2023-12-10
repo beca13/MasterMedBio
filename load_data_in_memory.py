@@ -12,6 +12,29 @@ class Autor:
     ime: str
     prezime: str
     institucija: str
+    zemlja: str = ""
+
+    def __init__(self, ime: str, prezime: str, institucija: str):
+        self.ime = ime
+        self.prezime = prezime
+        
+        # Sad cistimo instituciju (izbacujemo ISNI: tekst i sve posle)
+        subtext_to_ignore_everything_after = " ISNI:"
+
+        # Check if the subtext is present in the original string
+        if subtext_to_ignore_everything_after in institucija:
+            # Split the string based on the subtext
+            institucija = institucija.split(subtext_to_ignore_everything_after, 1)[0]
+
+        self.institucija = institucija
+
+        # sad da probamo zemlju da izvucemo kao poslednji element koji je razdvojen zarezom u instituciji
+        last_index = institucija.rfind(",")
+
+        if last_index != -1:
+            # Extract the last subtext
+            self.zemlja = institucija[last_index + 1:].strip().replace(".", "")
+            
 
 @dataclass
 class Rad:

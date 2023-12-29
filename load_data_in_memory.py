@@ -1,9 +1,19 @@
-import numpy as np
+import numpy as npmlja
 import pandas as pd
 from dataclasses import dataclass, field
 from typing import List
 import re
 
+skup_kljucnih_reci_srbija = ["Beograd", "Belgrade", "Zemun", "11000 B", "Serbia", "Srbija", "11000", "11080"]
+skup_kljucnih_reci_grad = ["Beograd", "Belgrade", "Zemun", "11000 B", "11000", "11080"]
+skup_kljucnih_reci_uni = ["University of Belgrade"]
+skup_kljucnih_reci_medbio = ["Medical Biochemistry"]
+
+def check_keywords_in_string(keywords, input_string):
+    for keyword in keywords:
+        if keyword in input_string:
+            return True
+    return False
 
 """ Definicija klasa i objekata """
 @dataclass
@@ -13,6 +23,9 @@ class Autor:
     prezime: str
     institucija: str
     zemlja: str = ""
+    grad: str = ""
+    uni: str = ""
+    medbio: str=""
 
     def __init__(self, ime: str, prezime: str, institucija: str):
         self.ime = ime
@@ -31,10 +44,19 @@ class Autor:
         # sad da probamo zemlju da izvucemo kao poslednji element koji je razdvojen zarezom u instituciji
         last_index = institucija.rfind(",")
 
-        if last_index != -1:
+        if check_keywords_in_string(skup_kljucnih_reci_srbija, institucija):
             # Extract the last subtext
-            self.zemlja = institucija[last_index + 1:].strip().replace(".", "")
-            
+            self.zemlja = "Serbia"
+
+        if check_keywords_in_string(skup_kljucnih_reci_grad, institucija):
+        # Extract the last subtext
+            self.grad = "Belgrade, Serbia" 
+        if check_keywords_in_string(skup_kljucnih_reci_uni, institucija):
+        # Extract the last subtext
+            self.uni = "University of Belgrade, Serbia"   
+        if check_keywords_in_string(skup_kljucnih_reci_medbio, institucija):
+        # Extract the last subtext
+            self.medbio = "Medical Biochemistry"   
 
 @dataclass
 class Rad:
@@ -148,18 +170,25 @@ class Radovi:
     def UcitajPubMed(self, pubmedPath: str):
         # Read lines from the file into an array
         rad_linije = []
+        id = 0
         with open(pubmedPath, 'r', encoding='utf-8', errors='ignore') as file:
             for line in file:
                 line = line  # Remove leading and trailing whitespaces
                 if not line.strip():  # Break if an empty line is encountered
-                    self.kolekcija.append(ucitaj_rad_iz_pubmed_sekcije(rad_linije))
+                    rad = ucitaj_rad_iz_pubmed_sekcije(rad_linije)
+                    id = id + 1
+                    rad.id = id
+                    self.kolekcija.append(rad)
                     rad_linije = []
 
                 rad_linije.append(line)
 
         # Poslednja sekcija rada (proveri da li smo stigli do kraja kada je ostala poslednja sekcija da se obradi)
         if (rad_linije != []):
-            self.kolekcija.append(ucitaj_rad_iz_pubmed_sekcije(rad_linije))
+            rad = ucitaj_rad_iz_pubmed_sekcije(rad_linije)
+            id = id + 1
+            rad.id = id
+            self.kolekcija.append(rad)
             rad_linije = []
 
     """ Ucitaj i dodaj scopus fajl na trenutnu kolekciju radova"""
@@ -171,7 +200,7 @@ class Radovi:
 
         # za svaki red napravi novi rad u memoriji
         for index, row in df.iterrows():
-            rad = Rad(row['EID'], row['Source title'])
+            rad = Rad(row['EID'], row['Title'])
 
             # delimiter ili razdvajac je ;
             if (pd.isnull(row["Author full names"])):
